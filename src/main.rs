@@ -2,8 +2,9 @@ use std::path::Path;
 use std::io::{self, BufRead};
 use std::fs::File;
 
+#[allow(dead_code)]
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-where P: AsRef<Path>, {
+    where P: AsRef<Path>, {
     let file = File::open(filename)?;
     Ok(io::BufReader::new(file).lines())
 }
@@ -52,6 +53,55 @@ fn p1_2() -> i32 {
     a + b + c
 }
 
+#[allow(dead_code)]
+fn p2_1() -> i32 {
+    let mut tot = 0;
+    if let Ok(lines) = read_lines("../../data/p2_1.txt") {
+        for line in lines {
+            if let Ok(x) = line {
+                let row:Vec<_> = x.chars().collect();
+                match (row[0],row[2]) {
+                    ('A','X') => {tot += 1 + 3},
+                    ('A','Y') => {tot += 2 + 6},
+                    ('A','Z') => {tot += 3},
+                    ('B','X') => {tot += 1},
+                    ('B','Y') => {tot += 2 + 3},
+                    ('B','Z') => {tot += 3 + 6},
+                    ('C','X') => {tot += 1 + 6},
+                    ('C','Y') => {tot += 2},
+                    ('C','Z') => {tot += 3 + 3},
+                    _ => ()
+                }
+            }
+        }
+    }
+    tot
+}
+
+#[allow(dead_code)]
+fn p2_2() -> i32 {
+    let mut tot = 0;
+    if let Ok(lines) = read_lines("../../data/p2_1.txt") {
+        for line in lines {
+            if let Ok(x) = line {
+                let row:Vec<_> = x.chars().collect();
+                match (row[0],row[2]) {
+                    ('A','X') => {tot += 3 + 0},
+                    ('A','Y') => {tot += 1 + 3},
+                    ('A','Z') => {tot += 2 + 6},
+                    ('B','X') => {tot += 1 + 0},
+                    ('B','Y') => {tot += 2 + 3},
+                    ('B','Z') => {tot += 3 + 6},
+                    ('C','X') => {tot += 2 + 0},
+                    ('C','Y') => {tot += 3 + 3},
+                    ('C','Z') => {tot += 1 + 6},
+                    _ => ()
+                }
+            }
+        }
+    }
+    tot
+}
 fn main() {
-    println!("{}",p1_2());
+    println!("{}",p2_2());
 }
