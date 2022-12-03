@@ -102,6 +102,56 @@ fn p2_2() -> i32 {
     }
     tot
 }
+
+#[allow(dead_code)]
+fn p3_1() -> i32 {
+    use std::collections::HashSet;
+    let mut tot = 0;
+    if let Ok(lines) = read_lines("../../data/p3_1.txt") {
+        for line in lines {
+            if let Ok(x) = line {
+                //println!("{}",x);
+                let row:Vec<u8> = x.bytes().collect();
+                let intersect = *row[..row.len()/2].iter().map(|x| *x).collect::<HashSet<u8>>()
+                .intersection(
+                    &row[row.len()/2..].iter().map(|x| *x).collect::<HashSet<u8>>()
+                ).next().unwrap();
+                match intersect {
+                    b'A'..=b'Z' => {tot += (27 + intersect - b'A') as i32},
+                    b'a'..=b'z' => {tot += (1 + intersect - b'a') as i32},
+                    _ => ()
+                }
+            }
+        }
+    }
+    tot
+}
+#[allow(dead_code)]
+fn p3_2() -> i32 {
+    use std::collections::HashSet;
+    let mut data = Vec::new();
+    if let Ok(lines) = read_lines("data/p3_1.txt") {
+        for line in lines {
+            if let Ok(x) = line {
+                let row:Vec<u8> = x.bytes().collect();
+                data.push(row);
+            }
+        }
+    }
+    data.chunks(3)
+        .map(|v| *v[0].iter().map(|x| *x).collect::<HashSet<u8>>()
+            .intersection(&v[1].iter().map(|x| *x).collect::<HashSet<u8>>())
+            .map(|x| *x)
+            .collect::<HashSet<u8>>()
+            .intersection(&v[2].iter().map(|x| *x).collect::<HashSet<u8>>())
+            .next().unwrap()).fold(0,|acc, badge| {
+                match badge {
+                    b'A'..=b'Z' => {acc + (27 + badge - b'A') as i32},
+                    b'a'..=b'z' => {acc + (1 + badge - b'a') as i32},
+                    _ => acc
+                }
+            })
+}
 fn main() {
-    println!("{}",p2_2());
+    println!("{}",p3_2());
 }
