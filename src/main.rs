@@ -152,6 +152,51 @@ fn p3_2() -> i32 {
                 }
             })
 }
+#[allow(dead_code)]
+fn p4_1() -> i32 {
+    let mut tot: i32 = 0;
+    if let Ok(lines) = read_lines("data/p4_1.txt") {
+        for line in lines {
+            if let Ok(x) = line {
+                let row:Vec<_> = x.chars().collect();
+                let mut i = 0;
+                let mut quad = vec![0;4];
+                for c in row {
+                    match c.to_digit(10) {
+                        Some(d) => {quad[i] = quad[i] * 10 + d},
+                        None => {i += 1;}
+                    }
+                }
+                if (quad[0] <= quad[2] && quad[3] <= quad[1]) || (quad[2] <= quad[0] && quad[1] <= quad[3] ) {
+                    tot += 1;
+                }
+            }
+        }
+    }
+    tot
+}
+#[allow(dead_code)]
+fn p4_2() -> i32 {
+    let mut tot: i32 = 0;
+    let lines = io::BufReader::new(File::open("data/p4_1.txt").unwrap()).lines();
+    for line in lines {
+        if let Ok(x) = line {
+            let row:Vec<_> = x.chars().collect();
+            let mut i = 0;
+            let mut quad = vec![0;4];
+            for c in row {
+                match c.to_digit(10) {
+                    Some(d) => {quad[i] = quad[i] * 10 + d},
+                    None => {i += 1;}
+                }
+            }
+            if quad[0].max(quad[2]) <= quad[1].min(quad[3]) {
+                tot += 1;
+            }
+        }
+    }
+    tot
+}
 fn main() {
-    println!("{}",p3_2());
+    println!("{}",p4_2());
 }
