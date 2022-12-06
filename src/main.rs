@@ -232,21 +232,26 @@ fn p5_1() -> String {
 }
 #[allow(dead_code)]
 fn p5_2() -> String {
-    let mut crates = vec![Vec::new(),
-    vec!['N','C','R','T','M','Z','P'],
-    vec!['D','N','T','S','B','Z'],
-    vec!['M','H','Q','R','F','C','T','G'],
-    vec!['G','R','Z'],
-    vec!['Z','N','R','H'],
-    vec!['F','H','S','W','P','Z','L','D'],
-    vec!['W','D','Z','R','C','G','M'],
-    vec!['S','J','F','L','H','W','Z','Q'],
-    vec!['S','Q','P','W','N']];
-
+    let mut crates = vec![Vec::new();10];
+    let mut ready = false;
     let lines = io::BufReader::new(File::open("data/p5_1.txt").expect("file not found")).lines();
-    for line in lines.filter_map(|x| x.ok()) {
+    for (line_nbr,line) in lines.filter_map(|x| x.ok()).enumerate() {
+        if line_nbr < 8 {
+            for (i,c) in line.chars().enumerate() {
+                if i % 4 == 1 && c != ' ' {
+                    crates[i/4 + 1].push(c);
+                }
+            }
+            continue
+        }
         if !line.starts_with("move") {
             continue
+        }
+        if !ready {
+            ready = true;
+            for i in 1..10 {
+                crates[i].reverse();
+            }
         }
         let row:Vec<_> = line.chars().collect();
         let mut i = 0;
