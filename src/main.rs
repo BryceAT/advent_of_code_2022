@@ -269,7 +269,27 @@ fn p5_2() -> String {
     }
     (1..10).map(|i| crates[i].last().unwrap()).collect()
 }
+#[allow(dead_code)]
+fn p6_x(q_len:usize) -> i32 {
+    use std::collections::VecDeque;
+    let mut q = VecDeque::new();
+    let lines = io::BufReader::new(File::open("data/p6_1.txt").expect("file not found")).lines();
+    for line in lines.filter_map(|x| x.ok()) {
+        for (i,c) in line.chars().enumerate() {
+            while q.contains(&c) {
+                q.pop_front();
+            }
+            q.push_back(c);
+            if q.len() == q_len {
+                return i as i32 +1
+            }
+        }
+    }
+    -1
+}
+
+
 fn main() {
-    println!("{}",p5_1());
-    println!("{}",p5_2());
+    println!("{}",p6_x(4));
+    println!("{}",p6_x(14));
 }
