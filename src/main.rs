@@ -271,13 +271,14 @@ fn p5_2() -> String {
 }
 #[allow(dead_code)]
 fn p6_x(q_len:usize) -> i32 {
+    // part1 is p6_x(4) and part2 is p6_x(14)
     use std::collections::VecDeque;
     let mut q = VecDeque::new();
     let lines = io::BufReader::new(File::open("data/p6_1.txt").expect("file not found")).lines();
     for line in lines.filter_map(|x| x.ok()) {
         for (i,c) in line.chars().enumerate() {
-            while q.contains(&c) {
-                q.pop_front();
+            if q.contains(&c) {
+                while Some(c) != q.pop_front() {();}
             }
             q.push_back(c);
             if q.len() == q_len {
