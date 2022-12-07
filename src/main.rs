@@ -288,9 +288,81 @@ fn p6_x(q_len:usize) -> i32 {
     }
     -1
 }
-
+#[allow(dead_code)]
+fn p7_1() -> i64 {
+    use std::collections::HashMap;
+    let mut m = HashMap::new();
+    let mut cur = "/".to_string();
+    let lines = io::BufReader::new(File::open("data/p7_1.txt").expect("file not found")).lines();
+    for line in lines.filter_map(|x| x.ok()) {
+        if line.starts_with("$ cd") {
+            match &line[5..] {
+                "/" => {cur = "/".to_string();},
+                ".." => {
+                    let mut it = cur.chars();
+                    it.next_back();
+                    while '/' != it.next_back().unwrap() {();}
+                    cur = it.collect::<String>() + "/"
+                },
+                f => {cur += &(f.to_string() + "/")},
+            }
+            continue
+        }
+        if line == "$ ls" {continue}
+        let v = line.split(' ').collect::<Vec<_>>();
+        if let Ok(size) = v[0].parse::<i32>() {
+            m.insert(cur.clone() + v[1], size);
+        }
+    }
+    let mut ans = HashMap::new();
+    for (k,v) in m {
+        let mut cur: String = k[..k.rfind('/').unwrap()].chars().collect();
+        while cur.len() > 0 {
+            *ans.entry(cur.clone()).or_insert(0) += v as i64;
+            cur = cur[..cur.rfind('/').unwrap()].chars().collect();
+        }
+    }
+    ans.values().filter(|v| *v < &100_000).sum()
+}
+#[allow(dead_code)]
+fn p7_2() -> i64 {
+    use std::collections::HashMap;
+    let mut m = HashMap::new();
+    let mut cur = "/".to_string();
+    let lines = io::BufReader::new(File::open("data/p7_1.txt").expect("file not found")).lines();
+    for line in lines.filter_map(|x| x.ok()) {
+        if line.starts_with("$ cd") {
+            match &line[5..] {
+                "/" => {cur = "/".to_string();},
+                ".." => {
+                    let mut it = cur.chars();
+                    it.next_back();
+                    while '/' != it.next_back().unwrap() {();}
+                    cur = it.collect::<String>() + "/"
+                },
+                f => {cur += &(f.to_string() + "/")},
+            }
+            continue
+        }
+        if line == "$ ls" {continue}
+        let v = line.split(' ').collect::<Vec<_>>();
+        if let Ok(size) = v[0].parse::<i32>() {
+            m.insert(cur.clone() + v[1], size);
+        }
+    }
+    let total_used = m.values().sum::<i32>();
+    let min_drop_size = total_used - 40_000_000;
+    let mut ans = HashMap::new();
+    for (k,v) in m {
+        let mut cur: String = k[..k.rfind('/').unwrap()].chars().collect();
+        while cur.len() > 0 {
+            *ans.entry(cur.clone()).or_insert(0) += v as i64;
+            cur = cur[..cur.rfind('/').unwrap()].chars().collect();
+        }
+    }
+    *ans.values().filter(|v| *v >= &(min_drop_size as i64)).min().unwrap()
+}
 
 fn main() {
-    println!("{}",p6_x(4));
-    println!("{}",p6_x(14));
+    println!("{}",p7_2());
 }
