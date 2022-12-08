@@ -362,7 +362,68 @@ fn p7_2() -> i64 {
     }
     *ans.values().filter(|v| *v >= &(min_drop_size as i64)).min().unwrap()
 }
-
+#[allow(dead_code)]
+fn p8_1() -> i32 {
+    let mut grid:Vec<Vec<u32>> = Vec::new();
+    let lines = io::BufReader::new(File::open("data/p8_1.txt").expect("file not found")).lines();
+    for line in lines.filter_map(|x| x.ok()) {
+        grid.push(line.chars().map(|c| c.to_digit(10).unwrap()).collect());
+    }
+    fn is_visable(x:usize,y:usize,grid: &Vec<Vec<u32>>) -> bool {
+        grid[x][..y].iter().all(|t| *t < grid[x][y]) ||
+        grid[x][(y+1)..].iter().all(|t| *t < grid[x][y]) ||
+        (0..x).all(|i| grid[i][y] < grid[x][y]) ||
+        ((x+1)..grid.len()).all(|i| grid[i][y] < grid[x][y]) 
+    }
+    (0..grid.len()).fold(0,|acc,r| {
+        acc + (0..grid[0].len()).fold(0,|col_sum,c|{
+            col_sum+if is_visable(r,c,&grid) {1} else {0}
+        })
+    })
+}
+#[allow(dead_code)]
+fn p8_2() -> i32 {
+    let mut grid:Vec<Vec<u32>> = Vec::new();
+    let lines = io::BufReader::new(File::open("data/p8_1.txt").expect("file not found")).lines();
+    for line in lines.filter_map(|x| x.ok()) {
+        grid.push(line.chars().map(|c| c.to_digit(10).unwrap()).collect());
+    }
+    fn ct_trees(x:usize,y:usize,grid: &Vec<Vec<u32>>) -> i32 {
+        (0..y).rev().fold((0,false),|(acc,done),j|{
+            match (done,grid[x][j]) {
+                (false,t) if t < grid[x][y] => {(acc+1,false)},
+                (false,t) if t >=grid[x][y] => {(acc+1,true)},
+                (_,_)  => {(acc,true)},
+            }
+        }).0 *
+        ((y+1)..grid[0].len()).fold((0,false),|(acc,done),j|{
+            match (done,grid[x][j]) {
+                (false,t) if t < grid[x][y] => {(acc+1,false)},
+                (false,t) if t >=grid[x][y] => {(acc+1,true)},
+                (_,_)  => {(acc,true)},
+            }
+        }).0 *
+        (0..x).rev().fold((0,false),|(acc,done),i|{
+            match (done,grid[i][y]) {
+                (false,t) if t < grid[x][y] => {(acc+1,false)},
+                (false,t) if t >=grid[x][y] => {(acc+1,true)},
+                (_,_)  => {(acc,true)},
+            }
+        }).0 *
+        ((x+1)..grid.len()).fold((0,false),|(acc,done),i|{
+            match (done,grid[i][y]) {
+                (false,t) if t < grid[x][y] => {(acc+1,false)},
+                (false,t) if t >=grid[x][y] => {(acc+1,true)},
+                (_,_)  => {(acc,true)},
+            }
+        }).0 
+    }
+    (0..grid.len()).fold(0,|acc,r| {
+        acc.max((0..grid[0].len()).fold(0,|col_max,c|{
+            col_max.max(ct_trees(r,c,&grid))
+        }))
+    })
+}
 fn main() {
-    println!("{}",p7_2());
+    println!("{}",p8_2());
 }
