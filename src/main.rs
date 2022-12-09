@@ -407,6 +407,80 @@ fn p8_2() -> i32 {
         }))
     })
 }
+#[allow(dead_code)]
+fn p9_1() -> usize {
+    use std::collections::HashSet;
+    let mut seen = HashSet::new();
+    let mut h = (0_i32,0_i32);
+    let mut t = (0_i32,0_i32);
+    seen.insert(t.clone());
+    let lines = io::BufReader::new(File::open("data/p9_1.txt").expect("file not found")).lines();
+    for line in lines.filter_map(|x| x.ok()) {
+        let mut direction = ' ';
+        let mut num = 0;
+        for (i,c) in line.chars().enumerate() {
+            match i {
+                0 => {direction = c;},
+                2.. => {num = num * 10 + c.to_digit(10).unwrap()},
+                _ => (),
+            }
+        }
+        match direction {
+            'U' => {h = (h.0 + num as i32, h.1)},
+            'D' => {h = (h.0 - num as i32, h.1)},
+            'L' => {h = (h.0, h.1 - num as i32)},
+            'R' => {h = (h.0, h.1 + num as i32)},
+            _ => ()
+        }
+        while (h.0 - t.0).abs().max((h.1 - t.1).abs()) > 1 {
+            t = (t.0 + (if h.0 == t.0 {0} else if h.0 > t.0 {1} else {-1}),
+                t.1 + (if h.1 == t.1 {0} else if h.1 > t.1 {1} else {-1}));
+            seen.insert(t.clone());
+        }
+    }
+    seen.len()
+}
+#[allow(dead_code)]
+fn p9_2() -> usize {
+    use std::collections::HashSet;
+    let mut seen = HashSet::new();
+    let mut rope = vec![(0_i32,0_i32);10];
+    seen.insert(rope[9].clone());
+    let lines = io::BufReader::new(File::open("data/p9_1.txt").expect("file not found")).lines();
+    for line in lines.filter_map(|x| x.ok()) {
+        let mut direction = ' ';
+        let mut num = 0;
+        for (i,c) in line.chars().enumerate() {
+            match i {
+                0 => {direction = c;},
+                2.. => {num = num * 10 + c.to_digit(10).unwrap()},
+                _ => (),
+            }
+        }
+        for _ in 0..num {
+            match direction {
+                'U' => {rope[0] = (rope[0].0 + 1, rope[0].1)},
+                'D' => {rope[0] = (rope[0].0 - 1, rope[0].1)},
+                'L' => {rope[0] = (rope[0].0, rope[0].1 - 1)},
+                'R' => {rope[0] = (rope[0].0, rope[0].1 + 1)},
+                _ => ()
+            }
+            for i in 0..9 {
+                while (rope[i].0 - rope[i+1].0).abs().max((rope[i].1 - rope[i+1].1).abs()) > 1 {
+                    rope[i+1] = (rope[i+1].0 + (if rope[i].0 == rope[i+1].0 {0} else if rope[i].0 > rope[i+1].0 {1} else {-1}),
+                    rope[i+1].1 + (if rope[i].1 == rope[i+1].1 {0} else if rope[i].1 > rope[i+1].1 {1} else {-1}));
+                    if i == 8 {
+                        seen.insert(rope[9].clone());
+                    }
+                }
+            }
+        }
+    }
+    //this test prints the path of the tail for slightly larger test. for a bigger board 12 and 25 would change
+    //let shif:HashSet<(i32,i32)> = seen.iter().map(|(i,j)| (i+12,j+12)).collect();
+    //for r in (0..25).rev() { println!("{:?}",(0..25).map(|c| if shif.contains(&(r,c)) {'#'} else {'.'}).collect::<String>());}
+    seen.len()
+}
 fn main() {
-    println!("{}",p8_2());
+    println!("{}",p9_2());
 }
