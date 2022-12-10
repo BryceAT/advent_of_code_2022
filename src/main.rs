@@ -481,6 +481,59 @@ fn p9_2() -> usize {
     //for r in (0..25).rev() { println!("{:?}",(0..25).map(|c| if shif.contains(&(r,c)) {'#'} else {'.'}).collect::<String>());}
     seen.len()
 }
+
+#[allow(dead_code)]
+fn p10_1() -> i32 {
+    let mut cycle = 0;
+    let mut prev = 1;
+    let mut x = 1;
+    let mut ans = 0;
+    let mut check_point = vec![220,180,140,100,60,20];
+    let lines = io::BufReader::new(File::open("data/p10_1.txt").expect("file not found")).lines();
+    for line in lines.filter_map(|line| line.ok()) {
+        if line.starts_with("noop") {
+            cycle += 1;
+        } else {
+            cycle += 2;
+            x += line.split(' ').collect::<Vec<_>>()[1].parse::<i32>().unwrap();
+        }
+        if !check_point.is_empty() && cycle >= *check_point.last().unwrap() {
+            ans += check_point.pop().unwrap() * prev;
+        }
+        prev = x;
+    }
+    ans
+}
+#[allow(dead_code)]
+fn p10_2() {
+    let mut cycle = 0;
+    let mut prev = 1;
+    let mut x = 1;
+    let mut loc = 0_i32;
+    let mut ans: Vec<String> = Vec::new();
+    let mut cur = "".to_string();
+    let lines = io::BufReader::new(File::open("data/p10_1.txt").expect("file not found")).lines();
+    for line in lines.filter_map(|line| line.ok()) {
+        if line.starts_with("noop") {
+            cycle += 1;
+        } else {
+            cycle += 2;
+            x += line.split(' ').collect::<Vec<_>>()[1].parse::<i32>().unwrap();
+        }
+        while loc < cycle {
+            cur += if (loc %40 - prev).abs() <= 1 {"X"} else {"."};
+            loc += 1;
+            if loc %40 == 0 {
+                ans.push(cur);
+                cur = "".to_string();
+            }
+        }
+        prev = x;
+    }
+    for row in ans {
+        println!("{row:?}");
+    }
+}
 fn main() {
-    println!("{}",p9_2());
+    p10_2();
 }
