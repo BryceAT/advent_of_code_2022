@@ -534,6 +534,65 @@ fn p10_2() {
         println!("{row:?}");
     }
 }
+#[allow(dead_code)]
+fn p11_x(div:i64,rounds:usize) -> i64 {
+    //part 1: p11_x(3,20)
+    //part 2: p11_x(1,10_000)
+    use std::collections::{HashMap,VecDeque};
+    let mut items = HashMap::new();
+    let mut ops:HashMap<i64,Box<dyn Fn(i64)-> i64>> = HashMap::new();
+    let mut throw = HashMap::new();
+    let mut ct:HashMap<i64,i64> = HashMap::new();
+    let mut cur_monkey = -1_i64;
+    let lines = io::BufReader::new(File::open("data/p11_1.txt").expect("file not found")).lines();
+    for line in lines.filter_map(|line| line.ok()) {
+        if line.starts_with("Monkey") {
+            cur_monkey += 1;
+        } else if line.starts_with("  Starting items:") {
+            let mut v = VecDeque::new();
+            let mut cur_val = 0;
+            for c in line.chars() {
+                match c.to_digit(10) {
+                    Some(d) => {cur_val = cur_val *10 + d;},
+                    _ if cur_val > 0 => {v.push_back(cur_val as i64);cur_val = 0;},
+                    _ => (),
+                }
+            }
+            if cur_val > 0 {v.push_back(cur_val as i64);}
+            items.insert(cur_monkey,v);
+        } else if line.starts_with("  Operation:") {
+            let ln = line.split(' ').collect::<Vec<_>>();
+            if let Ok(val) = ln.last().unwrap().parse::<i64>() {
+                if ln[ln.len() -2] == "+" {
+                    ops.insert(cur_monkey,Box::new(move |x| {x + val}));
+                } else {
+                    ops.insert(cur_monkey,Box::new(move |x| {x * val}));
+                }
+            } else {
+                ops.insert(cur_monkey,Box::new(|x| {x * x}));
+            }
+        } else if line.starts_with("  ") {
+            let val = line.split(' ').collect::<Vec<_>>().last().unwrap().parse::<i64>().unwrap();
+            throw.entry(cur_monkey).or_insert(Vec::new()).push(val);
+        }
+    }
+    let worry_control = throw.values().fold(1,|acc,v| acc * v[0]);
+    for monkey in (0..=cur_monkey).collect::<Vec<i64>>().repeat(rounds) {
+        while !items[&monkey].is_empty() {
+            *ct.entry(monkey).or_insert(0) += 1;
+            let mut worry = items.get_mut(&monkey).unwrap().pop_front().unwrap();
+            worry = (ops[&monkey](worry) / div) % worry_control;
+            if worry % throw[&monkey][0] == 0 {
+                items.get_mut(&throw[&monkey][1]).unwrap().push_back(worry);
+            } else {
+                items.get_mut(&throw[&monkey][2]).unwrap().push_back(worry);
+            }
+        }
+    }
+    let mut ans: Vec<_> = ct.values().collect();
+    ans.sort_unstable();
+    ans.pop().unwrap() * ans.pop().unwrap()
+}
 fn main() {
-    p10_2();
+    println!("part 1 {}, part 2 {}", p11_x(3,20), p11_x(1,10_000));
 }
