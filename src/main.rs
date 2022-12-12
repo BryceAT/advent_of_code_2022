@@ -593,6 +593,84 @@ fn p11_x(div:i64,rounds:usize) -> i64 {
     ans.sort_unstable();
     ans.pop().unwrap() * ans.pop().unwrap()
 }
+#[allow(dead_code)]
+fn p12_1() -> i32 {
+    use std::collections::{HashSet,HashMap};
+    let mut start = (0,0);
+    let mut end = (0,0);
+    let mut seen = HashSet::new();
+    let mut level = HashSet::new();
+    let mut map = HashMap::new();
+    let mut step = 0;
+    let lines = io::BufReader::new(File::open("data/p12_1.txt").expect("file not found")).lines();
+    for (r,line) in lines.filter_map(|line| line.ok()).enumerate() {
+        for (c,x) in line.bytes().enumerate() {
+            if x == b'S' {
+                start = (r,c);
+                map.insert((r,c),b'a');
+            } else if x == b'E' {
+                end = (r,c);
+                map.insert((r,c),b'z');
+            } else {
+                map.insert((r,c),x);
+            }
+        }
+    }
+    level.insert(start.clone());
+    while !level.contains(&end) {
+        step += 1;
+        seen = seen.union(&level).map(|x| *x).collect();
+        let mut new_level = HashSet::new();
+        for (x,y) in level {
+            for (a,b) in [(x.wrapping_add(!0),y),(x+1,y),(x,y.wrapping_add(!0)),(x,y+1)] {
+                if map.contains_key(&(a,b)) && !seen.contains(&(a,b)) && map[&(a,b)] <= map[&(x,y)] + 1 {
+                    new_level.insert((a,b));
+                }
+            }
+        }
+        level = new_level;
+    }
+    step
+}
+#[allow(dead_code)]
+fn p12_2() -> i32 {
+    use std::collections::{HashSet,HashMap};
+    let mut end = (0,0);
+    let mut seen = HashSet::new();
+    let mut level = HashSet::new();
+    let mut map = HashMap::new();
+    let mut step = 0;
+    let lines = io::BufReader::new(File::open("data/p12_1.txt").expect("file not found")).lines();
+    for (r,line) in lines.filter_map(|line| line.ok()).enumerate() {
+        for (c,x) in line.bytes().enumerate() {
+            if x == b'S' {
+                map.insert((r,c),b'a');
+            } else if x == b'E' {
+                end = (r,c);
+                map.insert((r,c),b'z');
+            } else {
+                map.insert((r,c),x);
+            }
+        }
+    }
+    level.insert(end.clone());
+    loop {
+        seen = seen.union(&level).map(|x| *x).collect();
+        let mut new_level = HashSet::new();
+        for (x,y) in level {
+            for (a,b) in [(x.wrapping_add(!0),y),(x+1,y),(x,y.wrapping_add(!0)),(x,y+1)] {
+                if map.contains_key(&(a,b)) && !seen.contains(&(a,b)) && map[&(a,b)] >= map[&(x,y)] - 1 {
+                    if map[&(x,y)] == b'a' {
+                        return step
+                    }
+                    new_level.insert((a,b));
+                }
+            }
+        }
+        level = new_level;
+        step += 1;
+    }
+}
 fn main() {
-    println!("part 1 {}, part 2 {}", p11_x(3,20), p11_x(1,10_000));
+    println!("part 2 {}", p12_2());
 }
