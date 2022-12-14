@@ -671,6 +671,122 @@ fn p12_2() -> i32 {
         step += 1;
     }
 }
+#[derive(Debug, Eq)]
+enum Packet {
+        Num(i32),
+        List(Vec<Packet>),
+    }
+#[allow(dead_code)]
+fn mk_p13_data() -> Vec<Packet> {
+    use std::cmp::Ordering;
+    impl Packet {
+        fn new(x: Vec<char>) -> Packet {
+            if x.len() == 0 {
+                return Packet::List(Vec::new())
+            }
+            if x[0] == '[' {
+                let mut cur: Vec<Packet> = Vec::new();
+                let mut l= 1;
+                let mut hill = 0;
+                for (r,c) in x.iter().enumerate().skip(1) {
+                    match c {
+                        '[' => {hill += 1;},
+                        ']' => {hill -= 1;},
+                        ',' if hill == 0 => {
+                        cur.push(Packet::new(x[l..r].iter().map(|x| *x).collect()));
+                        l = r+1;
+                        },
+                        _ => (),
+                    }
+                }
+                cur.push(Packet::new(x[l..x.len() -1].iter().map(|x| *x).collect()));
+                Packet::List(cur)
+            } else {
+                if let Ok(v) = x.iter().collect::<String>().parse::<i32>() {
+                    Packet::Num(v)
+                } else {
+                    println!("can not parse this number {:?}", x);
+                    Packet::new(vec!['9','9','9'])
+                }
+                
+            }
+        }
+        fn cmp(&self, other: &Self) -> Ordering {
+            match (self,other) {
+                (Packet::Num(num1),Packet::Num(num2)) => num1.cmp(num2),
+                (Packet::Num(_),Packet::List(_)) => Packet::List(vec![self.clone()]).cmp(other),
+                (Packet::List(_),Packet::Num(_)) => self.cmp(&Packet::List(vec![other.clone()])),
+                (Packet::List(v1),Packet::List(v2)) => {
+                    for (a,b) in v1.iter().zip(v2.iter()) {
+                        match (*a).cmp(b) {
+                            Ordering::Equal => continue,
+                            order => return order
+                        }
+                    }
+                    v1.len().cmp(&v2.len())
+                }
+            }
+        }
+    }
+
+    impl Ord for Packet {
+        fn cmp(&self, other: &Self) -> Ordering {
+            (*self).cmp(other)
+        }
+    }
+    impl PartialOrd for Packet {
+        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+            Some((*self).cmp(other))
+        }
+    }
+
+    impl PartialEq for Packet {
+        fn eq(&self, other: &Self) -> bool {
+            match (self,other) {
+                (Packet::Num(n1),Packet::Num(n2)) => {n1 == n2},
+                (Packet::List(v1),Packet::List(v2)) => {v1.len() == v2.len() && v1.iter().zip(v2.iter()).all(|(a,b)| a == b)},
+                _ => false
+            }
+        }
+    }
+    impl Clone for Packet {
+        fn clone(&self) -> Self {
+            match self {
+                Packet::Num(n) => Packet::Num(*n),
+                Packet::List(v) => Packet::List(v.clone())
+            }
+        }
+    }
+    let mut data: Vec<Packet> = Vec::new();
+    let lines = io::BufReader::new(File::open("data/p13_1.txt").expect("file not found")).lines();
+    for line in lines.filter_map(|line| line.ok()) {
+        if !line.is_empty() {
+            data.push(Packet::new(line.chars().collect()));
+        }
+    }
+    data
+}
+#[allow(dead_code)]
+fn p13_1() -> i32 {
+    let data = mk_p13_data();
+    let mut ans = 0;
+    for i in 0..data.len()/2 {
+        ans += if data[2*i] <= data[2*i + 1] {i+1} else {0};
+    }
+    ans as i32
+}
+#[allow(dead_code)]
+fn p13_2() -> i32 {
+    let mut data = mk_p13_data();
+    let e2 = Packet::new(format!("[[2]]").chars().collect::<Vec<char>>());
+    let e6 = Packet::new(format!("[[6]]").chars().collect::<Vec<char>>());
+    data.push(e2.clone());
+    data.push(e6.clone());
+    data.sort();
+    ((data.iter().position(|x| x == &e2).unwrap() +1) * 
+     (data.iter().position(|x| x == &e6).unwrap() +1)) as i32
+}
 fn main() {
-    println!("part 2 {}", p12_2());
+    println!("part 1 {}", p13_1());
+    println!("part 2 {}", p13_2());
 }
