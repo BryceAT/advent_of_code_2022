@@ -786,7 +786,84 @@ fn p13_2() -> i32 {
     ((data.iter().position(|x| x == &e2).unwrap() +1) * 
      (data.iter().position(|x| x == &e6).unwrap() +1)) as i32
 }
+#[allow(dead_code)]
+fn p14_1() -> i32 {
+    use std::collections::HashSet;
+    let mut m = HashSet::new();
+    let lines = io::BufReader::new(File::open("data/p14_1.txt").expect("file not found")).lines();
+    for line in lines.filter_map(|line| line.ok()) {
+        let mut mem: Option<(u16,u16)> = None;
+        for pair in line.split(" -> ") {
+            let v:Vec<_> = pair.split(',').map(|x| x.parse::<u16>().unwrap()).collect();
+            let cur = (v[0],v[1]);
+            if let Some(mid) = mem {
+                if mid.0 == cur.0 {
+                    for i in mid.1.min(cur.1) ..= mid.1.max(cur.1){
+                        m.insert((mid.0,i));
+                    }
+                } else {
+                    for i in mid.0.min(cur.0) ..= mid.0.max(cur.0){
+                        m.insert((i,mid.1));
+                    }
+                }
+            }
+            mem = Some(cur.clone());
+            m.insert(cur);
+        }
+    }
+    let lowest = *m.iter().map(|(_,y)| y).max().unwrap();
+    let mut cur = (500,0);
+    let mut ans = 0;
+    while cur.1 <= lowest {
+        match cur {
+            (x,y) if !m.contains(&(x,y+1)) => {cur = (x,y+1);},
+            (x,y) if !m.contains(&(x-1,y+1)) => {cur = (x-1,y+1);},
+            (x,y) if !m.contains(&(x+1,y+1)) => {cur = (x+1,y+1);},
+            _ => {ans += 1; m.insert(cur); cur = (500,0);}
+        }
+    }
+    ans
+}
+#[allow(dead_code)]
+fn p14_2() -> i32 {
+    use std::collections::HashSet;
+    let mut m = HashSet::new();
+    let lines = io::BufReader::new(File::open("data/p14_1.txt").expect("file not found")).lines();
+    for line in lines.filter_map(|line| line.ok()) {
+        let mut mem: Option<(u16,u16)> = None;
+        for pair in line.split(" -> ") {
+            let v:Vec<_> = pair.split(',').map(|x| x.parse::<u16>().unwrap()).collect();
+            let cur = (v[0],v[1]);
+            if let Some(mid) = mem {
+                if mid.0 == cur.0 {
+                    for i in mid.1.min(cur.1) ..= mid.1.max(cur.1){
+                        m.insert((mid.0,i));
+                    }
+                } else {
+                    for i in mid.0.min(cur.0) ..= mid.0.max(cur.0){
+                        m.insert((i,mid.1));
+                    }
+                }
+            }
+            mem = Some(cur.clone());
+            m.insert(cur);
+        }
+    }
+    let floor = *m.iter().map(|(_,y)| y).max().unwrap() + 1;
+    let mut cur = (500,0);
+    let mut ans = 0;
+    loop {
+        match cur {
+            (_,y) if y == floor => {ans += 1; m.insert(cur); cur = (500,0);},
+            (x,y) if !m.contains(&(x,y+1)) => {cur = (x,y+1);},
+            (x,y) if !m.contains(&(x-1,y+1)) => {cur = (x-1,y+1);},
+            (x,y) if !m.contains(&(x+1,y+1)) => {cur = (x+1,y+1);},
+            _ if cur == (500,0) => {ans += 1;break},
+            _ => {ans += 1; m.insert(cur); cur = (500,0);}
+        }
+    }
+    ans
+}
 fn main() {
-    println!("part 1 {}", p13_1());
-    println!("part 2 {}", p13_2());
+    println!("part 2 {}", p14_2());
 }
