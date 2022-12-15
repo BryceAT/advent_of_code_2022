@@ -864,6 +864,98 @@ fn p14_2() -> i32 {
     }
     ans
 }
+#[allow(dead_code)]
+fn p15_1(check_row: i32, count_beacon: bool) -> i32 {
+    //println!("part 1 {}", p15_1(2000000,false))
+    let mut sensors: Vec<Vec<i32>>= Vec::new();
+    let lines = io::BufReader::new(File::open("data/p15_1.txt").expect("file not found")).lines();
+    for line in lines.filter_map(|line| line.ok()) {
+        sensors.push(line.split(&['=',',',':']).filter_map(|part| part.parse::<i32>().ok()).collect());
+    }
+    let mut intervals: Vec<(i32,i32)> = Vec::new();
+    for sensor in sensors {
+        let mad = (sensor[0] - sensor[2]).abs() + (sensor[1] - sensor[3]).abs();
+        let sensor_to_row = (check_row - sensor[1]).abs();
+        if  sensor_to_row <= mad {
+            let mut l = sensor[0] - mad + sensor_to_row;
+            let mut r = sensor[0] + mad - sensor_to_row;
+            if !count_beacon {
+                if l == sensor[2] {
+                    l += 1;
+                } 
+                if r == sensor[2] {
+                    r -= 1;
+                }
+            }
+            if l <= r {
+                intervals.push((l,r));
+            }
+        }
+    }
+    intervals.sort();
+    let mut i = 0;
+    while i < intervals.len() - 1 {
+        if intervals[i].1 >= intervals[i + 1].0 {
+            intervals[i] = (intervals[i].0, intervals[i].1.max(intervals.remove(i+1).1));
+        } else {
+            i += 1;
+        }
+    }
+    intervals.iter().fold(0,|acc,&(a,b)| acc + b - a + 1)
+}
+#[allow(dead_code)]
+fn p15_2(limit: i32, count_beacon: bool) -> i64 {
+    //println!("part 2 {}", p15_2(4_000_000,true));
+    let mut sensors: Vec<Vec<i32>>= Vec::new();
+    let lines = io::BufReader::new(File::open("data/p15_1.txt").expect("file not found")).lines();
+    for line in lines.filter_map(|line| line.ok()) {
+        sensors.push(line.split(&['=',',',':']).filter_map(|part| part.parse::<i32>().ok()).collect());
+    }
+    let mut known_locs = std::collections::HashSet::new();
+    for sensor in &sensors {
+        known_locs.insert((sensor[0],sensor[1]));
+        known_locs.insert((sensor[2],sensor[3]));
+    }
+    let mut intervals: Vec<(i32,i32)>;
+    for check_row in 0..limit {
+        intervals = Vec::new();
+        for sensor in &sensors {
+            let mad = (sensor[0] - sensor[2]).abs() + (sensor[1] - sensor[3]).abs();
+            let sensor_to_row = (check_row - sensor[1]).abs();
+            if  sensor_to_row <= mad {
+                let mut l = sensor[0] - mad + sensor_to_row;
+                let mut r = sensor[0] + mad - sensor_to_row;
+                if !count_beacon {
+                    if l == sensor[2] {
+                        l += 1;
+                    } 
+                    if r == sensor[2] {
+                        r -= 1;
+                    }
+                }
+                if l <= r {
+                    intervals.push((l,r));
+                }
+            }
+        }
+        intervals.sort_unstable();
+        let mut i = 0;
+        while i < intervals.len() - 1 {
+            if intervals[i].1 >= intervals[i + 1].0 {
+                intervals[i] = (intervals[i].0, intervals[i].1.max(intervals.remove(i+1).1));
+            } else {
+                i += 1;
+            }
+        }
+        if intervals.iter().any(|(_,b)| 0<= *b && *b < limit) {
+            let b = intervals.clone().into_iter().filter_map(|(_,b)| if 0<= b && b < limit {Some(b + 1)} else {None}).next().unwrap();
+            if !known_locs.contains(&(b,check_row)) {
+                return b as i64 * 4_000_000 + check_row as i64
+            }
+        }
+    }
+    !0
+}
 fn main() {
-    println!("part 2 {}", p14_2());
+    println!("part 2 {}", p15_2(4_000_000,true));
 }
