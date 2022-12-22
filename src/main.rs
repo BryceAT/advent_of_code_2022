@@ -956,6 +956,135 @@ fn p15_2(limit: i32, count_beacon: bool) -> i64 {
     }
     !0
 }
+#[allow(dead_code)]
+fn p16_1() -> i32 {
+    //println!("part 1 {}", p16_1());
+    use std::collections::HashMap;
+    use regex::Regex;
+    let re = Regex::new(r"Valve (?P<cur_name>[A-Z]{2}) has flow rate=(?P<rate>\d+)(; tunnels lead to valves |; tunnel leads to valve )(?P<flow2>.*)").unwrap();
+    let mut valves_rate: HashMap<String,i32> = HashMap::new();
+    let mut valves2: HashMap<String,Vec<String>>= HashMap::new();
+    let lines = io::BufReader::new(File::open("data/p16_1.txt").expect("file not found")).lines();
+    for line in lines.filter_map(|line| line.ok()) {
+        let groups = re.captures(&line).unwrap();
+        let cur_name:String = groups.name("cur_name").unwrap().as_str().to_string();
+        valves_rate.insert(cur_name.clone(), groups.name("rate").unwrap().as_str().parse::<i32>().unwrap());
+        for out_name in groups.name("flow2").unwrap().as_str().split(", ") {
+            valves2.entry(cur_name.clone()).or_insert(Vec::new()).push(out_name.to_string());
+        }
+    }
+    let is_open_map: HashMap<String,usize> = valves_rate.keys().enumerate().map(|(i,k)| (k.to_string(),i)).collect();
+    let is_open: Vec<bool> = vec![false; is_open_map.len()];
+    let mut mem: HashMap<(String,i32,Vec<bool>),i32> = HashMap::new();
+    fn dfs(valves_rate: &HashMap<String,i32>, valves2: &HashMap<String,Vec<String>>, is_open_map: &HashMap<String,usize>,
+            cur_valve:String, remaining_time: i32, is_open: Vec<bool>, prev_flow: i32, 
+            mem: &mut HashMap<(String,i32,Vec<bool>),i32>) -> i32 {
+        let remaining_time = remaining_time - 1;
+        let prev_flow = prev_flow + valves_rate.iter().filter_map(|(name,rate)| if is_open[is_open_map[name]] {Some(rate)} else {None}).sum::<i32>();
+        let mut is_open = is_open.clone();
+        if remaining_time <= 0 {
+            return prev_flow
+        } else {
+            let mut best = 0;
+            for next_valve in &valves2[&cur_valve] {
+                if let Some(val) = mem.get(&(next_valve.to_string(), remaining_time, is_open.clone())) {
+                    best = best.max(*val);
+                } else {
+                    let val = dfs(valves_rate, valves2,is_open_map, next_valve.to_string(), remaining_time, is_open.clone(),0,mem);
+                    mem.insert((next_valve.clone(), remaining_time, is_open.clone()),val);
+                    best = best.max(*mem.get(&(next_valve.clone(), remaining_time, is_open.clone())).unwrap());
+                }
+            }
+            if valves_rate[&cur_valve] > 0 && !is_open[is_open_map[&cur_valve]] {
+                is_open[is_open_map[&cur_valve]] = true;
+                if let Some(val) = mem.get(&(cur_valve.clone(), remaining_time, is_open.clone())) {
+                    best = best.max(*val);
+                } else {
+                    let val = dfs(valves_rate, valves2, is_open_map, cur_valve.clone(), remaining_time, is_open.clone(),0,mem);
+                    mem.insert((cur_valve.clone(), remaining_time, is_open.clone()),val);
+                    best = best.max(*mem.get(&(cur_valve.clone(), remaining_time, is_open.clone())).unwrap());
+                }
+            }
+            return prev_flow + best
+        }
+    }
+    dfs(&valves_rate, &valves2, &is_open_map, "AA".to_string(), 30, is_open, 0, &mut mem)
+}
+#[allow(dead_code)]
+fn p16_2() -> i32 {
+    //println!("part 2 {}", p16_2());
+    #[allow(unused_imports)]
+    use std::collections::{HashMap,HashSet,BinaryHeap};
+    #[allow(unused_imports)]
+    use itertools::Itertools;
+    use regex::Regex;
+    let re = Regex::new(r"Valve (?P<cur_name>[A-Z]{2}) has flow rate=(?P<rate>\d+)(; tunnels lead to valves |; tunnel leads to valve )(?P<flow2>.*)").unwrap();
+    let lines = io::BufReader::new(File::open("data/p16_1.txt").expect("file not found")).lines();
+    let mut names = Vec::new();
+    let mut rates = Vec::new();
+    let mut flow2s = Vec::new();
+    for line in lines.filter_map(|line| line.ok()) {
+        let groups = re.captures(&line).unwrap();
+        names.push(groups.name("cur_name").unwrap().as_str().to_string());
+        rates.push(groups.name("rate").unwrap().as_str().parse::<i32>().unwrap());
+        let mut flow2 = Vec::new();
+        for out_name in groups.name("flow2").unwrap().as_str().split(", ") {
+            flow2.push(out_name.to_string().clone());
+        }
+        flow2s.push(flow2);
+    }
+    let mut data: Vec<(String,i32,Vec<String>)> = names.clone().into_iter().zip(rates.iter()).zip(flow2s.clone().into_iter()).map(|((n,r),f)| (n,*r,f)).collect();
+    data.sort_by_key(|(n,r,_)| (-r,if n == "AA" {0} else {1}));
+    let subset_names:Vec<String> = data.clone().into_iter().filter_map(|(n,r,_)| if (n == "AA") || (r > 0) {Some(n)} else {None}).collect();
+    let name_map = data.iter().enumerate().map(|(i,(n,_,_))| (n,i)).collect::<HashMap<_,_>>();
+    let mut dist: Vec<Vec<i32>> = vec![vec![0;subset_names.len()];subset_names.len()];
+    for a in 0..subset_names.len() {
+        for b in 0..subset_names.len() {
+            let mut level = vec![a];
+            let mut seen = HashSet::new();
+            let mut steps = 0;
+            while !level.contains(&b) {
+                steps += 1;
+                let mut new_level = Vec::new();
+                for n in level {
+                    seen.insert(n);
+                    for m in data[n].2.clone() {
+                        let canidate = name_map[&m];
+                        if !seen.contains(&canidate) {
+                            new_level.push(canidate);
+                        }
+                    }
+                }
+                level = new_level;
+            }
+            dist[a][b] = steps;
+        }
+    }
+    let mut mem: HashMap<(usize,i32,Vec<bool>),i32> = HashMap::with_capacity(20000);
+    fn bfs_score(cur:usize,need:HashSet<usize>,dist: &Vec<Vec<i32>>, data: &Vec<(String,i32,Vec<String>)>, steps: i32,
+                mem: &mut HashMap<(usize,i32,Vec<bool>),i32>) -> i32 {
+        if need.is_empty() {return 0}
+        let cur_ind = (cur,steps,(0..15).map(|i| need.contains(&i)).collect());
+        if let Some(val) = mem.get(&cur_ind) {return *val}
+        let mut best = 0_i32;
+        let mut nxt_need = need.clone();
+        for nxt in need {
+            nxt_need.remove(&nxt);
+            best = best.max(data[nxt].1 * (steps - dist[cur][nxt] -1) + bfs_score(nxt,nxt_need.clone(), dist, data, steps - dist[cur][nxt] -1,mem));
+            nxt_need.insert(nxt);
+        }
+        mem.insert(cur_ind,best);
+        best
+    }
+    let mut best = 0;
+    let aa = "AA".to_string();
+    for need1 in (0..subset_names.len() - 1).combinations((subset_names.len() - 1)/2) {
+        let need1: HashSet<usize> = need1.iter().map(|x| *x).collect();
+        let need2: HashSet<usize> = (0..subset_names.len() - 1).filter(|i| !need1.contains(i)).collect();
+        best = best.max(bfs_score(name_map[&aa],need1, &dist, &data, 26, &mut mem) + bfs_score(name_map[&aa],need2, &dist, &data, 26, &mut mem));
+    }
+    best
+}
 fn main() {
-    println!("part 2 {}", p15_2(4_000_000,true));
+    println!("part 2 {}", p16_2());
 }
