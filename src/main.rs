@@ -1085,7 +1085,7 @@ fn p16_2() -> i32 {
     }
     best
 }
-
+#[allow(dead_code)]
 fn p17_x(rocks:i64) -> i64 {
     // part 1 rocks = 2022
     // part 2 rocks = 1000000000000
@@ -1159,7 +1159,71 @@ fn p17_x(rocks:i64) -> i64 {
     }
     tall + jump 
 }
+fn p18_x(check:bool) -> i32 {
+    //part 1 p18_x(false)
+    //part 2 p18_x(true)
+    //3254 is too high
+    use regex::Regex;
+    use std::collections::HashSet;
+    let re = Regex::new(r"([^,]+),([^,]+),([^,]+)").unwrap();
+    let mut data:HashSet<(i32,i32,i32)> = HashSet::new();
+    let lines = io::BufReader::new(File::open("data/p18_1.txt").expect("file not found")).lines();
+    for line in lines.filter_map(|line| line.ok()) {
+        for triple in re.captures_iter(line.as_str()) {
+            data.insert((triple[1].parse::<i32>().unwrap(),triple[2].parse::<i32>().unwrap(),triple[3].parse::<i32>().unwrap()));
+        }
+    }
+    //println!("{:?}",data);
+    let mut seen = HashSet::new();
+    let mut ans = 0_i32;
+    let mut bubles = HashSet::new();
+    let mut exterior = HashSet::new();
+    for (a,b,c) in data.clone() {
+        ans += 6;
+        for (x,y,z) in [(a-1,b,c),(a+1,b,c),(a,b-1,c),(a,b+1,c),(a,b,c-1),(a,b,c+1)] {
+            if seen.contains(&(x,y,z)) {
+                ans -= 2;
+            } else if check && !data.contains(&(x,y,z)) && is_interior((x,y,z),&data, &mut bubles, &mut exterior) {
+                ans -= 1;
+            }
+        }
+        seen.insert((a,b,c));
+    } 
+    fn is_interior(air:(i32,i32,i32), data: &HashSet<(i32,i32,i32)>, 
+        bubles: &mut HashSet<(i32,i32,i32)>,
+        exterior: &mut HashSet<(i32,i32,i32)>) -> bool {
+        //if air is inside then we can only expand it so far
+        let tol = 20;
+        if bubles.contains(&air) { return true }
+        if exterior.contains(&air) { return false }
+        let mut level = HashSet::from([air]);
+        let mut seen = HashSet::new();
+        for _ in 0..tol {
+            let mut new_level = HashSet::new();
+            for (a,b,c) in level {
+                seen.insert((a,b,c));
+                for pt in [(a-1,b,c),(a+1,b,c),(a,b-1,c),(a,b+1,c),(a,b,c-1),(a,b,c+1)] {
+                    if !seen.contains(&pt) && !data.contains(&pt) {
+                        new_level.insert(pt);
+                    }
+                }
+            }
+            if new_level.is_empty() {
+                //println!("{:?}",air); 
+                for pt in seen {
+                    bubles.insert(pt);
+                }
+                return true
+            }
+            level = new_level;
+        }
+        for pt in seen { exterior.insert(pt); }
+        for pt in level { exterior.insert(pt); }
+        false
+    }
+    ans
+}
 fn main() {
-    println!("part 1 {}", p17_x(2022));
-    println!("part 2 {}", p17_x(1000000000000));
+    println!("part 1 {}", p18_x(false));
+    println!("part 2 {}", p18_x(true));
 }
