@@ -1159,6 +1159,7 @@ fn p17_x(rocks:i64) -> i64 {
     }
     tall + jump 
 }
+#[allow(dead_code)]
 fn p18_x(check:bool) -> i32 {
     //part 1 p18_x(false)
     //part 2 p18_x(true)
@@ -1223,7 +1224,58 @@ fn p18_x(check:bool) -> i32 {
     }
     ans
 }
+#[allow(dead_code)]
+fn p19_x(part1:bool) -> i32 {
+    //part 1 p19_x(true)
+    //part 2 p19_x(false)
+    use regex::Regex;
+    use std::collections::HashSet;
+    let re = Regex::new(r"Blueprint (\d+): Each ore robot costs (\d+) ore. Each clay robot costs (\d+) ore. Each obsidian robot costs (\d+) ore and (\d+) clay. Each geode robot costs (\d+) ore and (\d+) obsidian.").unwrap();
+    let mut data:Vec<Vec<i32>> = Vec::new();
+    let lines = io::BufReader::new(File::open("data/p19_1.txt").expect("file not found")).lines();
+    for line in lines.filter_map(|line| line.ok()) {
+        let nums = re.captures(line.as_str()).unwrap();
+        data.push(nums.iter().skip(1).map(|num| num.unwrap().as_str().parse::<i32>().unwrap()).collect());
+    }
+    println!("{:?}",data);
+    fn bfs(steps:i32, cost: (i32,i32,i32,i32,i32,i32)) -> i32 {
+        let state = (steps,0,0,0,0,1,0,0,0);
+        let mut seen = HashSet::new();
+        let mut stack = vec![state.clone()];
+        let mut best = 0_i32;
+        while !stack.is_empty() {
+            let (steps, ore, clay, obsidian, geode, ore_bot, clay_bot, obsidian_bot, geode_bot) = stack.pop().unwrap();
+            if steps == 0 {best = best.max(geode); continue}
+            if geode + ((2 * geode_bot + steps) * steps ) / 2 <= best {continue} //remove if even making a new geode bot every step does not make more than current best 
+            if seen.contains(&(steps, ore, clay, obsidian, geode, ore_bot, clay_bot, obsidian_bot, geode_bot)) { 
+                continue
+            } else {
+                seen.insert((steps, ore, clay, obsidian, geode, ore_bot, clay_bot, obsidian_bot, geode_bot));
+            }
+            stack.push((steps -1, ore + ore_bot, clay + clay_bot, obsidian + obsidian_bot, geode + geode_bot, ore_bot, clay_bot, obsidian_bot, geode_bot));
+            if ore >= cost.0 {
+                stack.push((steps -1, ore -cost.0 + ore_bot, clay + clay_bot, obsidian + obsidian_bot, geode + geode_bot, ore_bot + 1, clay_bot, obsidian_bot, geode_bot));
+            }
+            if ore >= cost.1 {
+                stack.push((steps -1, ore -cost.1 + ore_bot, clay + clay_bot, obsidian + obsidian_bot, geode + geode_bot, ore_bot , clay_bot + 1, obsidian_bot, geode_bot));
+            }
+            if ore >= cost.2 && clay >= cost.3 {
+                stack.push((steps -1, ore -cost.2 + ore_bot, clay -cost.3 + clay_bot, obsidian + obsidian_bot, geode + geode_bot, ore_bot , clay_bot, obsidian_bot + 1, geode_bot));
+            }
+            if ore >= cost.4 && obsidian >= cost.5 {
+                stack.push((steps -1, ore -cost.4 + ore_bot, clay + clay_bot, obsidian - cost.5 + obsidian_bot, geode + geode_bot, ore_bot , clay_bot, obsidian_bot, geode_bot + 1));
+            }
+        }
+        best
+    }
+    if part1 {
+        data.iter().map(|d| d[0] * bfs(24, (d[1],d[2],d[3],d[4],d[5],d[6]))).sum()
+    } else {
+        bfs(32, (data[0][1],data[0][2],data[0][3],data[0][4],data[0][5],data[0][6])) *
+        bfs(32, (data[1][1],data[1][2],data[1][3],data[1][4],data[1][5],data[1][6])) *
+        bfs(32, (data[2][1],data[2][2],data[2][3],data[2][4],data[2][5],data[2][6])) 
+    }
+}
 fn main() {
-    println!("part 1 {}", p18_x(false));
-    println!("part 2 {}", p18_x(true));
+    println!("part 2 {}", p19_x(false));
 }
