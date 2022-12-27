@@ -1276,6 +1276,35 @@ fn p19_x(part1:bool) -> i32 {
         bfs(32, (data[2][1],data[2][2],data[2][3],data[2][4],data[2][5],data[2][6])) 
     }
 }
+
+#[allow(dead_code)]
+fn p20_x(mult:i64, rounds: usize) -> i64 {
+    //part 1 p20_x(1, 1)
+    //part 2 p20_x(811589153, 10)
+    let mut data:Vec<i64> = Vec::new();
+    let lines = io::BufReader::new(File::open("data/p20_1.txt").expect("file not found")).lines();
+    for line in lines.filter_map(|line| line.ok()) {
+        data.push(mult  * line.parse::<i64>().unwrap());
+    }
+    //println!("{:?}",data);
+    let w = data.len();
+    let mut pos: Vec<usize> = (0..w).collect();
+    for _ in 0..rounds {
+        for (i,d) in data.iter().enumerate() {
+            if let Some(j) = pos.iter().position(|p| *p == i) {
+                pos.remove(j);
+                pos.insert((d+j as i64).rem_euclid(w as i64 - 1) as usize,i);
+                //println!("{d} to {} gives {:?}",(d+j as i32).rem_euclid(w as i32) as usize,pos.iter().map(|p| data[*p]).collect::<Vec<_>>());
+            }
+        }
+    }
+    let z_loc = data.iter().position(|d| *d == 0).unwrap();
+    let z = pos.iter().position(|p| *p == z_loc).unwrap();
+    //println!("{:?}",data[pos[(z+1000).rem_euclid(w ) as usize]]);
+    data[pos[(z+1000).rem_euclid(w) as usize]] +
+    data[pos[(z+2000).rem_euclid(w) as usize]] +
+    data[pos[(z+3000).rem_euclid(w) as usize]] 
+}
 fn main() {
-    println!("part 2 {}", p19_x(false));
+    println!("part 2 {}", p20_x(811589153, 10));
 }
