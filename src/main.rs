@@ -1305,6 +1305,128 @@ fn p20_x(mult:i64, rounds: usize) -> i64 {
     data[pos[(z+2000).rem_euclid(w) as usize]] +
     data[pos[(z+3000).rem_euclid(w) as usize]] 
 }
+#[allow(dead_code)]
+fn p21_1() -> i64 {
+    //part 1 p21_x()
+    use regex::Regex;
+    use std::collections::HashMap;
+    let re_num = Regex::new(r"([a-z]{4}): (\d+)").unwrap();
+    let re_ops = Regex::new(r"([a-z]{4}): ([a-z]{4}) (.+) ([a-z]{4})").unwrap();
+    let mut known: HashMap<String,i64> = HashMap::new();
+    let mut ops: HashMap<String,(String,String,String)> = HashMap::new();
+    let lines = io::BufReader::new(File::open("data/p21_1.txt").expect("file not found")).lines();
+    for line in lines.filter_map(|line| line.ok()) {
+        if let Some(grps) = re_num.captures(line.as_str()) {
+            known.insert(grps[1].to_string(),grps[2].parse().unwrap());
+        } else if let Some(grps) = re_ops.captures(line.as_str()) {
+            ops.insert(grps[1].to_string(),(grps[3].to_string(),grps[2].to_string(),grps[4].to_string()));
+        } 
+    }
+    fn rec(name:&str, known: &mut HashMap<String,i64>, ops: &HashMap<String,(String,String,String)>) -> i64 {
+        if let Some(val) = known.get(name) {
+            return *val
+        } else {
+            let val: i64;
+            let (op,l,r) = ops.get(name).unwrap();
+            let l_val = rec(&l,known,ops);
+            let r_val = rec(&r,known,ops);
+            match op.as_str() {
+                "+" => {val = l_val + r_val;},
+                "-" => {val = l_val - r_val;},
+                "*" => {val = l_val * r_val;},
+                "/" => {val = l_val / r_val;},
+                _ => {panic!("not an op!")}
+            }
+            known.insert(name.to_string(),val);
+            val
+        }
+    }
+    rec("root", &mut known, &ops)
+}
+#[allow(dead_code)]
+fn p21_2() -> i64 {
+    //part 1 p21_x()
+    use regex::Regex;
+    use std::collections::HashMap;
+    let re_num = Regex::new(r"([a-z]{4}): (\d+)").unwrap();
+    let re_ops = Regex::new(r"([a-z]{4}): ([a-z]{4}) (.+) ([a-z]{4})").unwrap();
+    let mut known: HashMap<String,i64> = HashMap::new();
+    let mut ops: HashMap<String,(String,String,String)> = HashMap::new();
+    let lines = io::BufReader::new(File::open("data/p21_1.txt").expect("file not found")).lines();
+    for line in lines.filter_map(|line| line.ok()) {
+        if let Some(grps) = re_num.captures(line.as_str()) {
+            known.insert(grps[1].to_string(),grps[2].parse().unwrap());
+        } else if let Some(grps) = re_ops.captures(line.as_str()) {
+            ops.insert(grps[1].to_string(),(grps[3].to_string(),grps[2].to_string(),grps[4].to_string()));
+        } 
+    }
+    fn rec(name:&str, known: &mut HashMap<String,i64>, ops: &HashMap<String,(String,String,String)>) -> Option<i64> {
+        if name == "humn" {
+            return None
+        } else if let Some(val) = known.get(name) {
+            return Some(*val)
+        } else {
+            let val: i64;
+            let (op,l,r) = ops.get(name).unwrap();
+            if let Some(l_val) = rec(&l,known,ops) {
+                if let Some(r_val) = rec(&r,known,ops) {
+                    match op.as_str() {
+                        "+" => {val = l_val + r_val;},
+                        "-" => {val = l_val - r_val;},
+                        "*" => {val = l_val * r_val;},
+                        "/" => {val = l_val / r_val;},
+                        _ => {panic!("not an op!")}
+                    }
+                    known.insert(name.to_string(),val);
+                    return Some(val)
+                }
+            }
+            None
+        }
+    }
+    let mut op: String;
+    let mut lhs: String;
+    let mut rhs: String;
+    (_,lhs,rhs) = ops.get(&"root".to_string()).unwrap().clone();
+    let mut target:i64;
+    if let Some(val) = rec(&lhs, &mut known, &ops) {
+        target = val;
+        (op,lhs,rhs) = ops.get(&rhs).unwrap().clone();
+    } else if let Some(val) = rec(&rhs, &mut known, &ops) {
+        target = val;
+        (op,lhs,rhs) = ops.get(&lhs).unwrap().clone();
+    } else {panic!("could not find a known branch!!");}
+    loop {
+        //if lhs == "humn" || rhs == "humn" { return target }
+        if let Some(val) = rec(&lhs, &mut known, &ops) {
+            match op.as_str() {
+                "+" => {target -= val;},
+                "*" => {target /= val;},
+                "-" => {target = val - target;},
+                "/" => {target = val / target;},
+                _ => ()
+            }
+            if rhs == "humn" {
+                return target
+            } else {
+                (op,lhs,rhs) = ops.get(&rhs).unwrap().clone();
+            }
+        } else if let Some(val) = rec(&rhs, &mut known, &ops) {
+            match op.as_str() {
+                "+" => {target -= val;},
+                "*" => {target /= val;},
+                "-" => {target += val;},
+                "/" => {target *= val;},
+                _ => ()
+            }
+            if lhs == "humn" {
+                return target
+            } else {
+                (op,lhs,rhs) = ops.get(&lhs).unwrap().clone();
+            }
+        } else {panic!("could not find a known branch!!");}
+    }
+}
 fn main() {
-    println!("part 2 {}", p20_x(811589153, 10));
+    println!("part 2 {}", p21_2());
 }
