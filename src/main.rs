@@ -1740,8 +1740,38 @@ fn p24_x(return_trip:bool) -> i32 {
     step
 
 }
-
+#[allow(dead_code)]
+fn p25_x() -> String {
+    use std::collections::VecDeque;
+    let mut num = 0_i64;
+    for line in io::BufReader::new(File::open("data/p25_1.txt").expect("file not found")).lines().filter_map(|line| line.ok()) {
+        for (i,c) in line.chars().rev().enumerate() {
+            num += match c {
+                '2' => {2 * 5_i64.pow(i as u32)},
+                '1' => {1 * 5_i64.pow(i as u32)},
+                '-' => {-1 * 5_i64.pow(i as u32)},
+                '=' => {-2 * 5_i64.pow(i as u32)},
+                _ => 0
+            }
+        }
+    }
+    //println!("{num}");
+    fn to_snafu(mut num: i64) -> String {
+        let mut cur = VecDeque::new();
+        while num != 0 {
+            match num % 5 {
+                0 => {cur.push_front('0'); num /= 5;},
+                1 => {cur.push_front('1'); num /= 5;},
+                2 => {cur.push_front('2'); num /= 5;},
+                3 => {cur.push_front('='); num /= 5; num += 1;},
+                4 => {cur.push_front('-'); num /= 5; num += 1;},
+                _ => {panic!("mod is strange!!")}
+            }
+        }
+        cur.iter().collect()
+    }
+    to_snafu(num)
+}
 fn main() {
-    println!("part 1 {}", p24_x(false));
-    println!("part 2 {}", p24_x(true));
+    println!("part 1 {}", p25_x());
 }
