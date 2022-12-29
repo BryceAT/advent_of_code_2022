@@ -1432,7 +1432,7 @@ fn p22_x(wrap_cube:bool) -> i32 {
     //part 1 p22_x(false)
     //part 2 p22_x(true)
     //143282 is too high
-    use std::collections::{HashMap,HashSet};
+    //use std::collections::HashMap;
     let mut m: Vec<Vec<Option<bool>>> = Vec::new();
     let mut steps: Vec<usize> = Vec::new();
     let mut turns: Vec<char> = Vec::new();
@@ -1509,7 +1509,7 @@ fn p22_x(wrap_cube:bool) -> i32 {
             _ => {panic!("down to where?!")}
         }
     }
-    let check_jumps = HashMap::from([
+    /*let check_jumps = HashMap::from([
         ((6, 2),(1,1)),
         ((1, 3),(1,1)),
         ((2, 6),(3,3)),
@@ -1534,7 +1534,7 @@ fn p22_x(wrap_cube:bool) -> i32 {
         ((5, 4),(0,0)),
         ((1, 6),(3,0)),
         ((5, 1),(2,0))
-    ]);
+    ]); */
     fn next_wrap(old_head:u8,cur:(usize,usize), m: &Vec<Vec<Option<bool>>>) -> ((usize,usize),u8) {
         let mut x = cur.0;
         let mut y = cur.1;
@@ -1610,7 +1610,59 @@ fn p22_x(wrap_cube:bool) -> i32 {
         1000 * (cur.0 as i32 + 1) + 4 * (cur.1 as i32 + 1) + head as i32
     }
 }
+#[allow(dead_code)]
+fn p23_x(steps:i32) -> i32 {
+    use std::collections::{HashMap,HashSet};
+    let mut pos = Vec::new();
+    let mut r = 0_i32;
+    for line in io::BufReader::new(File::open("data/p23_1.txt").expect("file not found")).lines().filter_map(|line| line.ok()) {
+        for (c,x) in line.chars().enumerate() {
+            if x == '#' {
+                pos.push((r,c as i32));
+            }
+        }
+        r += 1;
+    }
+    //println!("{:?}", pos);
+    //for row in 0..12 {println!("{:?}",(0..14).map(|col| if pos.contains(&(row,col)) {'#'} else {'.'}).collect::<String>());}
+    let mut priority = vec!["N","S","W","E"];
+    for step in 0..steps {
+        let old = HashSet::from_iter(pos.iter());
+        let mut consider = HashMap::with_capacity(pos.len());
+        let mut ct = HashMap::with_capacity(pos.len());
+        //check open
+        for (i,p) in pos.iter().enumerate() {
+            let (r,c): (i32,i32) = *p;
+            if old.is_disjoint(&HashSet::from([&(r-1,c-1),&(r-1,c),&(r-1,c+1),&(r+1,c-1),&(r+1,c),&(r+1,c+1),&(r,c+1),&(r,c-1)])) { continue }
+            for d in &priority {
+                match *d {
+                    "N" if old.is_disjoint(&HashSet::from([&(r-1,c-1),&(r-1,c),&(r-1,c+1)])) => {consider.insert(i,(r-1,c)); ct.entry((r-1,c)).and_modify(|x| *x += 1).or_insert(1); break;},
+                    "S" if old.is_disjoint(&HashSet::from([&(r+1,c-1),&(r+1,c),&(r+1,c+1)])) => {consider.insert(i,(r+1,c)); ct.entry((r+1,c)).and_modify(|x| *x += 1).or_insert(1); break;},
+                    "E" if old.is_disjoint(&HashSet::from([&(r-1,c+1),&(r,c+1),&(r+1,c+1)])) => {consider.insert(i,(r,c+1)); ct.entry((r,c+1)).and_modify(|x| *x += 1).or_insert(1); break;},
+                    "W" if old.is_disjoint(&HashSet::from([&(r-1,c-1),&(r,c-1),&(r+1,c-1)])) => {consider.insert(i,(r,c-1)); ct.entry((r,c-1)).and_modify(|x| *x += 1).or_insert(1); break;},
+                    _ => ()
+                }
+            }
+        }
+        //try move
+        if consider.is_empty() {
+            println!("part 2 {:?}", step + 1);
+            break
+        }
+        for (i,(r,c)) in consider {
+            if 1 == *ct.get(&(r,c)).unwrap() {
+                pos[i] = (r,c);
+            }
+        }
+        priority.rotate_left(1);
+        //println!("end of Round {} {priority:?}",step + 1);
+        //for row in 0..12 {println!("{:?}",(0..14).map(|col| if pos.contains(&(row,col)) {'#'} else {'.'}).collect::<String>());}
+    }
+    (pos.iter().map(|(r,_)| r).max().unwrap() - pos.iter().map(|(r,_)| r).min().unwrap() + 1) *
+    (pos.iter().map(|(_,c)| c).max().unwrap() - pos.iter().map(|(_,c)| c).min().unwrap() + 1) - pos.len() as i32
+}
+
 fn main() {
-    println!("part 1 {}", p22_x(false));
-    println!("part 2 {}", p22_x(true));
+    println!("part 1 {}", p23_x(1000000));
+    //println!("part 2 {}", p22_x(true));
 }
