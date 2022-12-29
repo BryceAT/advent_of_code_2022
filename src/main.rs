@@ -1427,6 +1427,190 @@ fn p21_2() -> i64 {
         } else {panic!("could not find a known branch!!");}
     }
 }
+#[allow(dead_code)]
+fn p22_x(wrap_cube:bool) -> i32 {
+    //part 1 p22_x(false)
+    //part 2 p22_x(true)
+    //143282 is too high
+    use std::collections::{HashMap,HashSet};
+    let mut m: Vec<Vec<Option<bool>>> = Vec::new();
+    let mut steps: Vec<usize> = Vec::new();
+    let mut turns: Vec<char> = Vec::new();
+    for line in io::BufReader::new(File::open("data/p22_1.txt").expect("file not found")).lines().filter_map(|line| line.ok()) {
+        if line.starts_with(['0','1','2','3','4','5','6','7','8','9']) {
+            let mut cur = 0_usize;
+            for c in line.chars() {
+                if let Some(dig) = c.to_digit(10) {
+                    cur = 10 * cur + dig as usize;
+                } else {
+                    steps.push(cur);
+                    cur = 0;
+                    turns.push(c);
+                }
+            }
+            steps.push(cur);
+        } else if line.len() > 0 {
+            let mut cur = Vec::new();
+            for c in line.chars() {
+                match c {
+                    '.' => {cur.push(Some(true));},
+                    '#' => {cur.push(Some(false));},
+                    _ => {cur.push(None);}
+                }
+            }
+            m.push(cur);
+        }
+    }
+    let width = m.iter().map(|v| v.len()).max().unwrap();
+    let length = m.len();
+    for row in 0..length {
+        while m[row].len() < width {
+            m[row].push(None);
+        }
+    }
+    fn next_sq(head:u8,cur:(usize,usize), width:usize , length:usize , m: &Vec<Vec<Option<bool>>>) -> (usize,usize) {
+        let mut x = cur.0;
+        let mut y = cur.1;
+        match head {
+            0 => {//right
+                y = (y + 1) % width;
+                while m[x][y] == None { y = (y + 1) % width; }
+                if m[x][y].unwrap() { return (x,y) } else { return cur }
+            },
+            1 => {//down
+                x = (x + 1) % length;
+                while m[x][y] == None { x = (x + 1) % length; }
+                if m[x][y].unwrap() { return (x,y) } else { return cur }
+            },
+            2 => {//left
+                if y == 0 {y = width -1;} else {y -= 1;}
+                while m[x][y] == None { if y == 0 {y = width -1;} else {y -= 1;}}
+                if m[x][y].unwrap() { return (x,y) } else { return cur }
+            },
+            _ => {//up is 3
+                if x == 0 {x = length -1;} else {x -= 1;}
+                while m[x][y] == None { if x == 0 {x = length -1;} else {x -= 1;} }
+                if m[x][y].unwrap() { return (x,y) } else { return cur }
+            },
+        }
+    }
+    // 12 
+    // 3  
+    //54 
+    //6   
+    fn get_sq(cur:(usize,usize)) -> u8 {
+        match (cur.0,cur.1) {
+            (0..=49,50..=99) => {1},//1
+            (0..=49,100..=149) => {2},//2 
+            (50..=99,50..=99) => {3},//3
+            (100..=149,50..=99) => {4},//4 
+            (100..=149,0..=49) => {5},//5 
+            (150..=199,0..=49) => {6},
+            _ => {panic!("down to where?!")}
+        }
+    }
+    let check_jumps = HashMap::from([
+        ((6, 2),(1,1)),
+        ((1, 3),(1,1)),
+        ((2, 6),(3,3)),
+        ((4, 5),(2,2)),
+        ((2, 1),(2,2)),
+        ((6, 1),(2,1)),
+        ((2, 3),(1,2)),
+        ((6, 5),(3,3)),
+        ((3, 1),(3,3)),
+        ((3, 2),(0,3)),
+        ((3, 5),(2,1)),
+        ((5, 6),(1,1)),
+        ((3, 4),(1,1)),
+        ((4, 3),(3,3)),
+        ((4, 6),(1,2)),
+        ((1, 2),(0,0)),
+        ((2, 4),(0,2)),
+        ((5, 3),(3,0)),
+        ((4, 2),(0,2)),
+        ((6, 4),(0,3)),
+        ((1, 5),(2,0)),
+        ((5, 4),(0,0)),
+        ((1, 6),(3,0)),
+        ((5, 1),(2,0))
+    ]);
+    fn next_wrap(old_head:u8,cur:(usize,usize), m: &Vec<Vec<Option<bool>>>) -> ((usize,usize),u8) {
+        let mut x = cur.0;
+        let mut y = cur.1;
+        let mut head = old_head;
+        match (head,x,y) {
+            (0,_,_) if y % 50 != 49 => { y += 1;}, //right same face
+            (0,0..=49,50..=99) => {y += 1;},//1 -> 2
+            (0,0..=49,100..=149) => {y = 99; x = 149 - x; head = 2;},//2 -> 4
+            (0,50..=99,50..=99) => {y = 50 + x; x = 49; head = 3;},//3 -> 2
+            (0,100..=149,50..=99) => {y = 149; x = 149 - x; head = 2;},//4 -> 2
+            (0,100..=149,0..=49) => {y += 1;},//5 -> 4
+            (0,150..=199,0..=49) => {y = x - 100; x = 149; head = 3;},//6 -> 4
+            (1,_,_) if x % 50 != 49 => { x += 1; }, // down same face
+            (1,0..=49,50..=99) => { x += 1;}, //1 -> 3
+            (1,0..=49,100..=149) => { x = y - 50; y = 99; head = 2;}, //2 -> 3
+            (1,50..=99,50..=99) => { x += 1;}, // 3 -> 4
+            (1,100..=149,50..=99) => { x = y + 100; y = 49; head = 2;}, // 4 -> 6
+            (1,100..=149,0..=49) => { x += 1;}, // 5 -> 6
+            (1,150..=199,0..=49) => { x = 0; y += 100; }, // 6 -> 2
+            (2,_,_) if y % 50 != 0 => { y -= 1;}, //left same face
+            (2,0..=49,50..=99) => { y = 0; x = 149 - x; head = 0;}, //1 -> 5
+            (2,0..=49,100..=149) => { y -= 1;}, //2 -> 1
+            (2,50..=99,50..=99) => { y = x - 50; x = 100; head = 1;}, // 3 -> 5
+            (2,100..=149,50..=99) => { y -= 1;}, // 4 -> 5
+            (2,100..=149,0..=49) => { y = 50; x = 149 - x; head = 0;}, // 5 -> 1
+            (2,150..=199,0..=49) => { y = x - 100; x = 0;  head = 1; }, // 6 -> 1
+            (3,_,_) if x % 50 != 0 => { x -= 1;}, //up same face
+            (3,0..=49,50..=99) => { x = y + 100; y = 0; head = 0;}, //1 -> 6
+            (3,0..=49,100..=149) => { x = 199; y -= 100;}, //2 -> 6
+            (3,50..=99,50..=99) => { x -= 1;}, // 3 -> 1
+            (3,100..=149,50..=99) => { x -= 1;}, // 4 -> 3
+            (3,100..=149,0..=49) => { x = y + 50; y = 50; head = 0;}, // 5 -> 3
+            (3,150..=199,0..=49) => { x -= 1; }, // 6 -> 5
+            _ => {panic!("what to where?!")}
+        }
+        if m[x][y] == None || x > 200 || y  > 200 {println!("{:?} {} {} {}",cur,head, x ,y);}
+        if m[x][y].unwrap() { ((x,y),head) } else { (cur,old_head) }
+    }
+    let mut head = 0;
+    let mut cur = next_sq(0,(0,0),width,length,&m);
+    let mut pic = m.iter().map(|row| row.iter().map(|x| if let Some(b) = x {if *b {'.'} else {'#'}} else {' '}).collect::<Vec<char>>()).collect::<Vec<_>>();
+    //for l in &pic { println!("{:?}", l.iter().collect::<String>()); }
+    //let mut check_pairs = HashSet::new();
+    if wrap_cube {
+        turns.push('_'); // make turns as long as steps.  
+        for (step,turn) in steps.into_iter().zip(turns.into_iter()) {
+            for _ in 0..step {
+                (cur,head) = next_wrap(head,cur,&m);
+                match head {
+                    0 => {pic[cur.0][cur.1] = '>'},
+                    1 => {pic[cur.0][cur.1] = 'V'},
+                    2 => {pic[cur.0][cur.1] = '<'},
+                    3 => {pic[cur.0][cur.1] = '^'},
+                    _ => ()
+                }
+            }
+            pic[cur.0][cur.1] = turn;
+            if turn == 'R' {head = (head + 1) % 4;} else if turn == 'L' {if head == 0 {head = 3;} else {head -= 1;}}
+        }
+        //for l in &pic { println!("{:?}", l.iter().collect::<String>()); }
+        //for p in check_pairs {println!("{:?}",p);}
+        //for cur in [(0,50),(0,99),(49,50),(49,99)] { for head in [0,1,2,3] { println!("{cur:?} {head} {:?}",next_wrap(head,cur,&m)); } }
+        //for cur in [(0,100),(0,149),(49,100),(49,149)] { for head in [0,1,2,3] { println!("{cur:?} {head} {:?}",next_wrap(head,cur,&m)); } }
+        1000 * (cur.0 as i32 + 1) + 4 * (cur.1 as i32 + 1) + head as i32
+    } else {
+        turns.push('_'); // make turns as long as steps.  
+        for (step,turn) in steps.into_iter().zip(turns.into_iter()) {
+            for _ in 0..step {
+                cur = next_sq(head,cur,width,length,&m);
+            }
+            if turn == 'R' {head = (head + 1) % 4;} else if turn == 'L' {if head == 0 {head = 3;} else {head -= 1;}}
+        }
+        1000 * (cur.0 as i32 + 1) + 4 * (cur.1 as i32 + 1) + head as i32
+    }
+}
 fn main() {
-    println!("part 2 {}", p21_2());
+    println!("part 1 {}", p22_x(false));
+    println!("part 2 {}", p22_x(true));
 }
