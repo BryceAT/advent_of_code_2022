@@ -1661,8 +1661,87 @@ fn p23_x(steps:i32) -> i32 {
     (pos.iter().map(|(r,_)| r).max().unwrap() - pos.iter().map(|(r,_)| r).min().unwrap() + 1) *
     (pos.iter().map(|(_,c)| c).max().unwrap() - pos.iter().map(|(_,c)| c).min().unwrap() + 1) - pos.len() as i32
 }
+#[allow(dead_code)]
+fn p24_x(return_trip:bool) -> i32 {
+    use std::collections::HashSet;
+    let mut m_up = Vec::new();
+    let mut m_down = Vec::new();
+    let mut m_left = Vec::new();
+    let mut m_right = Vec::new();
+    //skip(1) will skip first row of hashes
+    for line in io::BufReader::new(File::open("data/p24_1.txt").expect("file not found")).lines().skip(1).filter_map(|line| line.ok()) {
+        m_up.push(Vec::new()); m_down.push(Vec::new()); m_left.push(Vec::new()); m_right.push(Vec::new());
+        let mut row = line.chars();
+        row.next_back(); // remove right side hashes
+        for c in row.skip(1) { //skip left side hashes
+            m_up.last_mut().unwrap().push(c == '^');
+            m_down.last_mut().unwrap().push(c == 'v');
+            m_left.last_mut().unwrap().push(c == '<');
+            m_right.last_mut().unwrap().push(c == '>');
+        }
+    }
+    m_up.pop(); m_down.pop(); m_left.pop(); m_right.pop(); // pop off bottom row of hashes
+    //for r in 0..m_up.len() {println!("{:?}",m_right[r]);}
+    let end = (m_up.len()-1,m_up[0].len()-1);
+    fn rotate(m_up: &mut Vec<Vec<bool>>,m_down: &mut Vec<Vec<bool>>,m_left: &mut Vec<Vec<bool>>,m_right: &mut Vec<Vec<bool>>) {
+        m_up.rotate_left(1);
+        m_down.rotate_right(1);
+        for row in m_left { row.rotate_left(1); }
+        for row in m_right { row.rotate_right(1); }
+    }
+    let mut cur = HashSet::new();
+    let mut step = 1_i32;
+    while !cur.contains(&end) {
+        step += 1;
+        rotate(&mut m_up,&mut m_down, &mut m_left,&mut  m_right);
+        let mut level = HashSet::new();
+        for (x,y) in cur {
+            for (r,c) in [(x,y),(x+1,y),(x,y+1),(x.wrapping_add(!0),y),(x,y.wrapping_add(!0))] {
+                if r <= end.0 && c <= end.1 && ![&m_up,&m_down,&m_left,&m_right].iter().any(|x| x[r][c]) {
+                    level.insert((r,c));
+                }
+            }
+        }
+        level.insert((0_usize,0_usize));
+        cur = level;
+    }  
+    if !return_trip { return step }
+    cur = HashSet::new();
+    while !cur.contains(&(0,0)) {
+        step += 1;
+        rotate(&mut m_up,&mut m_down, &mut m_left,&mut  m_right);
+        let mut level = HashSet::new();
+        for (x,y) in cur {
+            for (r,c) in [(x,y),(x+1,y),(x,y+1),(x.wrapping_add(!0),y),(x,y.wrapping_add(!0))] {
+                if r <= end.0 && c <= end.1 && ![&m_up,&m_down,&m_left,&m_right].iter().any(|x| x[r][c]) {
+                    level.insert((r,c));
+                }
+            }
+        }
+        level.insert(end.clone());
+        cur = level;
+        //println!("{cur:?}");
+    }
+    cur = HashSet::new();
+    while !cur.contains(&end) {
+        step += 1;
+        rotate(&mut m_up,&mut m_down, &mut m_left,&mut  m_right);
+        let mut level = HashSet::new();
+        for (x,y) in cur {
+            for (r,c) in [(x,y),(x+1,y),(x,y+1),(x.wrapping_add(!0),y),(x,y.wrapping_add(!0))] {
+                if r <= end.0 && c <= end.1 && ![&m_up,&m_down,&m_left,&m_right].iter().any(|x| x[r][c]) {
+                    level.insert((r,c));
+                }
+            }
+        }
+        level.insert((0_usize,0_usize));
+        cur = level;
+    } 
+    step
+
+}
 
 fn main() {
-    println!("part 1 {}", p23_x(1000000));
-    //println!("part 2 {}", p22_x(true));
+    println!("part 1 {}", p24_x(false));
+    println!("part 2 {}", p24_x(true));
 }
